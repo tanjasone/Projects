@@ -1,0 +1,3 @@
+Calculator Compiler 
+-------------------
+I started this project after I took a System Software class revolving around concepts used in compilers. During the class, we made a compiler and virtual machine for the pl0 language using C. Among these topics are: lexing/tokenization with regular languages, parsing with context free grammars to create abstract syntax trees, and recursive traversal of these trees to evaluate them. Here, I decided to try implementing the same concepts to make a Java program that can evaluate math expressions. For simplicity, it only supports the basic addition, subtraction, multiplication, and division operations. 
