@@ -42,7 +42,7 @@ public class CalculatorCompiler
 			return;
 		}
 		
-		Evaluator.eval(head);
+		System.out.println("Value: " + Evaluator.eval(head));
 		
 		
 	}
