@@ -1,6 +1,5 @@
 
 
-
 class Expression
 {
 	Expression left_expr;
@@ -24,7 +23,6 @@ class Term extends Expression
 	
 	Term()
 	{
-		super();
 		left_factor = 0;
 		right_factor = 0; 
 	}
@@ -32,8 +30,8 @@ class Term extends Expression
 
 public class Parser
 {
-	private static final int FACTOR_OP = 0;
-	private static final int TERM_OP = 1;
+	private static final int TERM_OP = 0;
+	private static final int FACTOR_OP = 1;
 	private static Token[] tokens;
 	private static int i;
 	
@@ -55,7 +53,7 @@ public class Parser
 		node.left_expr = term();
 		
 		i++;
-		if (isOp(tokens[i]) < 2)
+		if (isOp(tokens[i]) == Parser.TERM_OP)
 		{
 			node.op = tokens[i];
 			node.right_expr = term();
@@ -108,6 +106,7 @@ public class Parser
 		}
 		else
 			parse_error(tokens[i]);
+		
 		return null;
 	}
 
@@ -130,8 +129,7 @@ public class Parser
 	private static void parse_error(Token t)
 	{
 		System.out.println("Parse error on " + t);
-		Exception e = new Exception();
-		e.printStackTrace();
+		new Exception().printStackTrace();
 		System.exit(3);
 	}
 }
