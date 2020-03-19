@@ -1,5 +1,3 @@
-package chess;
-
 import javax.swing.*;
 import javax.swing.border.LineBorder;
 import javax.swing.border.Border;
@@ -14,8 +12,9 @@ public class ChessGame{
 		JFrame gameFrame = new JFrame();
 		JPanel gameWindow = new JPanel();
 		JPanel gameBoard = new JPanel(new GridLayout(8, 8));
+		Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
 		//JPanel gameUI = BuildUI();
-
+		
 		GameController gc = new GameController();
 		BoardTile[][] tiles = new BoardTile[8][8];
 		for(i=0; i<8; i++) {
@@ -23,7 +22,7 @@ public class ChessGame{
 				tiles[i][j] = new BoardTile();
 				tiles[i][j].position = new Point(j, i);
 				if(j%2==1) {
-					Color c = i % 2 == 0 ? new Color(100,100,100) : new Color(200,200,200);
+					Color c = i%2==0 ? new Color(100,100,100) : new Color(200,200,200);
 					tiles[i][j].setBackground(c);
 				}
 				else {
@@ -34,12 +33,11 @@ public class ChessGame{
 				gameBoard.add(tiles[i][j]);
 			}
 		}
+		initPieces(tiles);
 		
 		gameFrame.setVisible(true);
-		gameFrame.setSize(600, 600);
+		gameFrame.setSize(screenSize);
 		gameFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		
-		gameWindow.setSize(600, 600);
 		
 		gameBoard.setEnabled(true);
 		gameBoard.setVisible(true);
@@ -50,9 +48,9 @@ public class ChessGame{
 		gc.setBoard(gameBoard);
 		gc.setTileArray(tiles);
 
-		initPieces(tiles);
+		
 
-		//gameWindow.add(gameBoard);
+		gameWindow.add(gameBoard);
 		//gameWindow.add(gameUI);
 		
 		gameFrame.add(gameBoard);
@@ -60,8 +58,8 @@ public class ChessGame{
 
 	private static void initPieces(BoardTile[][] bt){
 
-		int i, j;
-			
+		int i;
+
 		bt[0][0].cp = new Rook(Color.BLACK);
 		bt[0][1].cp = new Knight(Color.BLACK);
 		bt[0][2].cp = new Bishop(Color.BLACK);
@@ -84,9 +82,9 @@ public class ChessGame{
 			bt[1][i].cp = new Pawn(Color.BLACK);
 			bt[6][i].cp = new Pawn(Color.WHITE);
 		}
-		
+
 		for(i=0; i<8; i++){
-			for(j=0; j<8; j++) {
+			for(int j=0; j<8; j++) {
 				if (bt[i][j].cp != null) {
 					bt[i][j].add(bt[i][j].cp.name);
 					bt[i][j].cp.pos = bt[i][j].position;
@@ -96,15 +94,14 @@ public class ChessGame{
 
 	}
 
-	/*private static JPanel BuildUI(){
+	private static JPanel BuildUI(){
 
 		JPanel ui = new JPanel(new BorderLayout());
-		Label 
 
 
-		ui.add(, BorderLayout.NORTH);
+		//ui.add(, BorderLayout.NORTH);
 
 		return ui;
-	}*/
+	}
 
 }
