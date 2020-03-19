@@ -1,5 +1,3 @@
-package chess;
-
 import java.awt.Point;
 import java.awt.Color;
 import java.awt.Label;
