@@ -64,7 +64,10 @@ class Patient implements Comparable<Patient>
 
 	@Override
 	public int compareTo(Patient p) {
-		return data[0].compareTo(p.data[0]);
+		if(!data[0].equals(p.data[0]))
+			return data[0].compareTo(p.data[0]);
+		else
+			return data[1].compareTo(p.data[1]);
 	}
 	
 	public String toString()
@@ -95,7 +98,7 @@ class Patient implements Comparable<Patient>
 	}
 }
 
-public class MedicalRecords 
+public class MedicalRecords
 {
 	public static void main(String[] args) {
 		
@@ -218,7 +221,7 @@ class DataField extends JPanel
 	
 	DataField(String name, JTextField tf)
 	{
-		this.name = new Label(name);
+		this.name = new Label(name+":");
 		this.name.setAlignment(Label.LEFT);
 		text = tf;
 		text.setAlignmentX(LEFT_ALIGNMENT);
@@ -285,14 +288,17 @@ class ProgramControl implements ActionListener, KeyListener, MouseListener
 	{
 		Point p = resPanel.getMousePosition();
 		Component item = resPanel.getComponentAt(p);
-		if(!(item instanceof SearchItem)) return;
+		if(!(item instanceof SearchItem || item.getParent() instanceof SearchItem)) return;
 		
 		if(selectedResult != null)
 		{
 			selectedResult.setBorder(DEFAULT_BORDER);
 			selectedResult.setBackground(DEFAULT_COLOR);
 		}
-		selectedResult = (SearchItem)item;
+		if(item.getParent() instanceof SearchItem)
+			selectedResult = (SearchItem)item.getParent();
+		else
+			selectedResult = (SearchItem)item;
 		selectedResult.setBorder(new LineBorder(new Color(170, 190, 230), 5));
 		selectedResult.setBackground(new Color(180,180,180));
 		System.out.println("Selected "+selectedResult.patient.toString());
@@ -313,8 +319,18 @@ class ProgramControl implements ActionListener, KeyListener, MouseListener
 	
 	private void performSearch()
 	{
-		String query = targetText.getText().toUpperCase();
-		System.out.println("Searching for \""+query+"\"...");
+		String[] query = new String[2];
+		String str = targetText.getText().toUpperCase();
+		if(str.equals("")) return;
+		System.out.println("Searching for \""+str+"\"...");
+		boolean searchFirstName = str.contains(",");
+		if(searchFirstName)
+		{
+			query = str.split(",");
+			query[1] = query[1].trim();
+		}
+		else
+			query[0] = str;
 		
 		String data;
 		String encs;
@@ -322,36 +338,20 @@ class ProgramControl implements ActionListener, KeyListener, MouseListener
 		
 		try 
 		{
-			if(query.equals(""))
+			Scanner sc = new Scanner(new File(".P"+(int)Character.toUpperCase(query[0].charAt(0))));
+			while(sc.hasNext())
 			{
-				for(int i='A'; i<='Z'; i++)
+				data = sc.nextLine();
+				encs = sc.nextLine();
+				if(query[0].regionMatches(true, 0, data, 0, query[0].length()))
 				{
-					Scanner sc = new Scanner(new File(".P"+ i));
-					while(sc.hasNext())
-					{
-						data = sc.nextLine();
-						encs = sc.nextLine();
-						Patient p = new Patient(data, encs);
-						patientList.add(p);
-					}
-					sc.close();
+					Patient p = new Patient(data, encs);
+					if(searchFirstName && !p.data[1].regionMatches(true, 0, query[1], 0, query[1].length()))
+						continue;
+					patientList.add(p);
 				}
 			}
-			else
-			{
-				Scanner sc = new Scanner(new File(".P"+(int)Character.toUpperCase(query.charAt(0))));
-				while(sc.hasNext())
-				{
-					data = sc.nextLine();
-					encs = sc.nextLine();
-					if(query.regionMatches(true, 0, data, 0, query.length()))
-					{
-						Patient p = new Patient(data, encs);
-						patientList.add(p);
-					}
-				}
-				sc.close();
-			}
+			sc.close();
 			displaySearchItems(null);
 		} 
 		catch(IOException e)
@@ -364,13 +364,20 @@ class ProgramControl implements ActionListener, KeyListener, MouseListener
 	
 	private void displaySearchItems(ArrayList<Patient> list)
 	{
-		if(list == null)
+		Label resLabel = new Label("", Label.CENTER);
+		resLabel.setPreferredSize(new Dimension(300, 40));
+		resLabel.setMaximumSize(new Dimension(300, 40));
+		
+		if(list == null)	//display class variable list
 		{
 			resPanel.removeAll();
 			System.out.println("Printing search results...");
 			
 			resPanel.setPreferredSize(new Dimension(300, patientList.size()*65));
 			resPanel.setLayout(new BoxLayout(resPanel, BoxLayout.Y_AXIS));
+			resLabel.setText(patientList.size()+" results found");
+			
+			resPanel.add(resLabel);
 			for (int i=0; i<patientList.size(); i++)
 			{
 				Patient p = patientList.get(i);
@@ -381,20 +388,15 @@ class ProgramControl implements ActionListener, KeyListener, MouseListener
 				si.setBorder(DEFAULT_BORDER);
 				resPanel.add(si);
 			}
-		
-			if(patientList.size()==0)
-			{
-				resPanel.setLayout(new FlowLayout());
-				resPanel.add(new Label("No patients found"));
-			}
 		}
-		else
+		else	//display given list
 		{
 			resPanel.removeAll();
 			System.out.println("Printing search results...");
 			
 			resPanel.setPreferredSize(new Dimension(300, list.size()*65));
 			resPanel.setLayout(new BoxLayout(resPanel, BoxLayout.Y_AXIS));
+			resPanel.add(resLabel);
 			for (int i=0; i<list.size(); i++)
 			{
 				Patient p = list.get(i);
@@ -423,7 +425,7 @@ class ProgramControl implements ActionListener, KeyListener, MouseListener
 		Scanner sc;
 		int i;
 		
-		Patient p;
+		
 		data = dataFieldsList.get(0).getText();
 		for(i=1; i<17; i++)
 		{
@@ -437,19 +439,53 @@ class ProgramControl implements ActionListener, KeyListener, MouseListener
 		for(i=17; i<dataFieldsList.size(); i++)
 		{
 			if(dataFieldsList.get(i).getText().equals(""))
-			{
 				break;
-			}
 			encs += ";"+dataFieldsList.get(i).getText();
 		}
 		encs = ((i-17)/2) + encs;
-		p = new Patient(data, encs);
+		Patient savePatient = new Patient(data, encs);
 		
 		try {
-			if(patient != null)
+			if(patient != null)		// save change to existing patient info
 			{
-				File fp = new File(".P"+(int)Character.toUpperCase(p.data[0].charAt(0)));
+				File fp = new File(".P"+(int)Character.toUpperCase(savePatient.data[0].charAt(0)));
+				Patient p1;
+				sc = new Scanner(fp);
 				
+				while(sc.hasNext())
+				{
+					data = sc.nextLine();
+					encs = sc.nextLine();
+					p1 = new Patient(data, encs);
+					saveList.add(p1);
+				}
+				sc.close();
+				
+				for(i=0; i < saveList.size(); i++)
+					if(saveList.get(i).compareTo(savePatient)==0)
+						break;
+				saveList.set(i, savePatient);
+				
+				for(i=0; i < patientList.size(); i++)
+					if(patientList.get(i).compareTo(savePatient)==0)
+						break;
+				patientList.set(i, savePatient);
+				
+				PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(fp, false)));
+				for(Patient p3 : saveList)
+				{
+					String[] str = p3.print();
+					pw.println(str[0]);
+					pw.println(str[1]);
+				}
+				pw.close();
+				
+				displaySearchItems(null);
+			}
+			else	// create new patient(no existing patient info being modified)
+			{
+				File fp = new File(".P"+(int)Character.toUpperCase(savePatient.data[0].charAt(0)));
+				boolean added = false;
 				sc = new Scanner(fp);
 				while(sc.hasNext())
 				{
@@ -457,46 +493,15 @@ class ProgramControl implements ActionListener, KeyListener, MouseListener
 					encs = sc.nextLine();
 					Patient p1 = new Patient(data, encs);
 					saveList.add(p1);
-				}
-				sc.close();
-				
-				for(Iterator<Patient> it = saveList.iterator(); it.hasNext();)
-				{
-					if(patient.data[0].equals(it.next().data[0]))
+					if(!added && savePatient.compareTo(p1) > 0)
 					{
-						it.remove();
-						break;
+						saveList.add(savePatient);
+						added = true;
 					}
 				}
-				saveList.add(p);
-				Collections.sort(saveList);
-				
-				PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(fp, false)));
-				for(Patient p3 : saveList)
-				{
-					String[] str = p3.print();
-					pw.println(str[0]);
-					pw.println(str[1]);
-				}
-				pw.close();
-			}
-			else
-			{
-				File fp = new File(".P"+(int)Character.toUpperCase(p.data[0].charAt(0)));
-				
-				sc = new Scanner(fp);
-				while(sc.hasNext())
-				{
-					data = sc.nextLine();
-					encs = sc.nextLine();
-					Patient p1 = new Patient(data, encs);
-					saveList.add(p1);
-				}
+				if(saveList.size() == 0) saveList.add(savePatient);
 				sc.close();
 				
-				saveList.add(p);
-				Collections.sort(saveList);
-				
 				PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(fp, false)));
 				for(Patient p3 : saveList)
 				{
@@ -505,12 +510,15 @@ class ProgramControl implements ActionListener, KeyListener, MouseListener
 					pw.println(str[1]);
 				}
 				pw.close();
+				ArrayList<Patient> list = new ArrayList<>();
+				list.add(savePatient);
+				displaySearchItems(list);
 			}
 		} 
 		catch (IOException e) {
 			e.printStackTrace();
 		}
-		displaySearchItems(saveList);
+		
 	}
 	
 	private void deletePatient(Patient p) {
@@ -541,7 +549,6 @@ class ProgramControl implements ActionListener, KeyListener, MouseListener
 				deleteList.add(p1);
 			}
 			sc.close();
-			System.out.println(deleteList.size());
 			
 			for(Iterator<Patient> it = deleteList.iterator(); it.hasNext();)
 			{
@@ -551,9 +558,12 @@ class ProgramControl implements ActionListener, KeyListener, MouseListener
 					break;
 				}
 			}
+			int i;
+			for(i=0; i < patientList.size(); i++)
+				if(patientList.get(i).compareTo(p)==0)
+					break;
+			patientList.remove(i);
 			
-			
-			System.out.println(deleteList.size());
 			PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(fp, false)));
 			for(Patient p3 : deleteList)
 			{
@@ -562,12 +572,12 @@ class ProgramControl implements ActionListener, KeyListener, MouseListener
 				pw.println(str[1]);
 			}
 			pw.close();
-		} 
+		}
 		catch (IOException e) {
 			e.printStackTrace();
 		}
 		
-		displaySearchItems(deleteList);
+		displaySearchItems(null);
 		dataPanel.removeAll();
 		dataPanel.repaint();
 		dataPanel.revalidate();
@@ -605,8 +615,10 @@ class ProgramControl implements ActionListener, KeyListener, MouseListener
 		JPanel encsPanel = new JPanel();
 		JScrollPane dataScroll = new JScrollPane(mainDataPanel);
 		JScrollPane encsScroll = new JScrollPane(encsPanel);
+		Label titleLabel = new Label("Patient Demographics", Label.CENTER);
+		titleLabel.setFont(new Font(null, Font.BOLD, 16));
 		
-		dataTitle.add(new Label("Patient Demographics"));
+		dataTitle.add(titleLabel);
 		dataTitle.setBackground(new Color(190,190,190));
 		mainDataPanel.add(dataTitle);
 		
@@ -694,12 +706,14 @@ class ProgramControl implements ActionListener, KeyListener, MouseListener
 		
 		encsScroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
 		encsScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-		encsScroll.setBorder(new LineBorder(new Color(0,0,0), 5));
+		encsScroll.setBorder(new LineBorder(new Color(0,0,0), 3));
 		
 		dataScroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER);
 		dataScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
 		
-		encsPanel.add(new Label("Encounters"));
+		Label encsLabel = new Label("Encounters", Label.CENTER);
+		encsLabel.setFont(new Font(null, Font.BOLD, 14));
+		encsPanel.add(encsLabel);
 		for (int i=0; i<p.encNum; i++)
 		{
 			dataField = new DataField("Date", new JTextField(p.encsList[i].date, 13));
@@ -760,8 +774,10 @@ class ProgramControl implements ActionListener, KeyListener, MouseListener
 		JPanel encsPanel = new JPanel();
 		JScrollPane dataScroll = new JScrollPane(mainDataPanel);
 		JScrollPane encsScroll = new JScrollPane(encsPanel);
+		Label titleLabel = new Label("New Patient Demographics", Label.CENTER);
+		titleLabel.setFont(new Font(null, Font.BOLD, 16));
 		
-		dataTitle.add(new Label("Patient Demographics"));
+		dataTitle.add(titleLabel);
 		dataTitle.setBackground(new Color(190,190,190));
 		mainDataPanel.add(dataTitle);
 		
@@ -844,12 +860,14 @@ class ProgramControl implements ActionListener, KeyListener, MouseListener
 		
 		encsScroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
 		encsScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-		encsScroll.setBorder(new LineBorder(new Color(0,0,0), 5));
+		encsScroll.setBorder(new LineBorder(new Color(0,0,0), 3));
 		
 		dataScroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER);
 		dataScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-		
-		encsPanel.add(new Label("Encounters"));
+
+		Label encsLabel = new Label("Encounters", Label.CENTER);
+		encsLabel.setFont(new Font(null, Font.BOLD, 14));
+		encsPanel.add(encsLabel);
 		
 		dataField = new DataField("Date", new JTextField(13));
 		dataField.add(new Label("Description"));
