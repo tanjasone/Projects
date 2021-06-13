@@ -50,7 +50,7 @@ class Patient implements Comparable<Patient>
 		
 		if(!encStr.equals("0")) {
 			encs = encStr.split(";");
-			encNum = Integer.parseInt(encs[0]);
+			encNum = (encs.length - 1) / 2;
 			encsList = new Encounter[encNum];
 			int j=0;
 			for (int i=1; j<encNum;i+=2)
@@ -101,7 +101,7 @@ class Patient implements Comparable<Patient>
 public class MedicalRecords
 {
 	public static void main(String[] args) {
-		
+
 		JFrame rootFrame = new JFrame("Medical Records - Eugene P. Tan M.D.");
 		JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
 		JSplitPane searchPanel = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
@@ -109,61 +109,68 @@ public class MedicalRecords
 		JPanel searchResults = new JPanel();
 		JScrollPane scrollPane = new JScrollPane();
 		TypedButton searchButton = new TypedButton("Search", TypedButton.SEARCH_BUTTON);
-		JTextField searchText = new JTextField();
+		JTextField firstNameField = new JTextField();
+		JTextField lastNameField = new JTextField();
 		JPanel outPanel = new JPanel();
 		JPanel dataPanel = new JPanel();
 		JPanel optionsPanel = new JPanel();
 		TypedButton addButton = new TypedButton("Add Patient", TypedButton.ADD_PATIENT);
 		ProgramControl progControl = new ProgramControl();
 		Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-		
+
 		rootFrame.setSize(screenSize);
 		rootFrame.setVisible(true);
 		rootFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-		
+
 		searchButton.addActionListener(progControl);
-		
-		searchText.setColumns(20);
-		searchText.addKeyListener(progControl);
-		progControl.setTextSource(searchText);
-		
-		searchBox.add(searchText);
+
+		firstNameField.setColumns(20);
+		firstNameField.addKeyListener(progControl);
+		lastNameField.setColumns(20);
+		lastNameField.addKeyListener(progControl);
+		progControl.setTextSource(firstNameField, lastNameField);
+
+
+		searchBox.add(new JLabel("First Name"));
+		searchBox.add(firstNameField);
+		searchBox.add(new JLabel("Last Name"));
+		searchBox.add(lastNameField);
 		searchBox.add(searchButton);
-		searchBox.setMinimumSize(new Dimension(300, 50));
-		searchBox.setPreferredSize(new Dimension(300, 50));
-		
-		searchResults.setBackground(new Color(210, 210, 210));
+		searchBox.setMinimumSize(new Dimension(300, 100));
+		searchBox.setPreferredSize(new Dimension(300, 100));
+
+		searchResults.setBackground(new Color(210, 210, 210, 0));
 		searchResults.addMouseListener(progControl);
 		searchResults.setMaximumSize(new Dimension(300, screenSize.height));
 		searchResults.setPreferredSize(new Dimension(300, screenSize.height-140));
 		scrollPane.setViewportView(searchResults);
 		scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
 		scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+		scrollPane.getVerticalScrollBar().setUnitIncrement(16);
 		progControl.setSearchPanel(searchResults, scrollPane);
-		
 		searchPanel.setTopComponent(searchBox);
 		searchPanel.setBottomComponent(scrollPane);
-		
+
 		dataPanel.setBackground(new Color(240,240,240));
 		dataPanel.setPreferredSize(new Dimension(1100, 900));
 		dataPanel.setLayout(new BoxLayout(dataPanel, BoxLayout.X_AXIS));
 		progControl.setDataPanel(dataPanel);
-		
+
 		addButton.addActionListener(progControl);
-		
+
 		optionsPanel.setBackground(new Color(190,190,190));
 		optionsPanel.setPreferredSize(new Dimension(1100, 30));
 		optionsPanel.add(addButton);
-		
+
 		outPanel.setLayout(new BoxLayout(outPanel, BoxLayout.Y_AXIS));
 		outPanel.setBackground(new Color(200,200,200));
 		outPanel.add(dataPanel);
 		outPanel.add(optionsPanel);
-		
+
 		splitPane.setLeftComponent(searchPanel);
 		splitPane.setRightComponent(outPanel);
 		splitPane.setDividerLocation(300);
-		
+
 		rootFrame.add(splitPane);
 		rootFrame.pack();
 		rootFrame.setExtendedState(rootFrame.getExtendedState() | JFrame.MAXIMIZED_BOTH);
@@ -233,7 +240,8 @@ class DataField extends JPanel
 
 class ProgramControl implements ActionListener, KeyListener, MouseListener
 {
-	JTextField targetText;
+	JTextField firstNameField;
+	JTextField lastNameField;
 	ArrayList<Patient> patientList;
 	ArrayList<JTextField> dataFieldsList;
 	JPanel resPanel;
@@ -244,8 +252,9 @@ class ProgramControl implements ActionListener, KeyListener, MouseListener
 	private final Border DEFAULT_BORDER = new LineBorder(new Color(150,150,150),4);
 	private final Color DEFAULT_COLOR = new Color(200,200,200);
 	
-	public void setTextSource(JTextField tf){
-		targetText = tf;
+	public void setTextSource(JTextField first, JTextField last){
+		firstNameField = first;
+		lastNameField = last;
 	}
 	
 	public void setSearchPanel(JPanel p, JScrollPane sp){
@@ -320,17 +329,13 @@ class ProgramControl implements ActionListener, KeyListener, MouseListener
 	private void performSearch()
 	{
 		String[] query = new String[2];
-		String str = targetText.getText().toUpperCase();
-		if(str.equals("")) return;
-		System.out.println("Searching for \""+str+"\"...");
-		boolean searchFirstName = str.contains(",");
-		if(searchFirstName)
-		{
-			query = str.split(",");
-			query[1] = query[1].trim();
-		}
-		else
-			query[0] = str;
+		String firstName = firstNameField.getText().toUpperCase();
+		String lastName = lastNameField.getText().toUpperCase();
+		if(lastName.equals("")) return;
+
+		System.out.println("Searching for \""+firstName + " " + lastName +"\"...");
+		query[0] = lastName;
+		query[1] = firstName;
 		
 		String data;
 		String encs;
@@ -346,12 +351,13 @@ class ProgramControl implements ActionListener, KeyListener, MouseListener
 				if(query[0].regionMatches(true, 0, data, 0, query[0].length()))
 				{
 					Patient p = new Patient(data, encs);
-					if(searchFirstName && !p.data[1].regionMatches(true, 0, query[1], 0, query[1].length()))
+					if(!p.data[1].regionMatches(true, 0, query[1], 0, query[1].length()))
 						continue;
 					patientList.add(p);
 				}
 			}
 			sc.close();
+			Collections.sort(patientList);
 			displaySearchItems(null);
 		} 
 		catch(IOException e)
@@ -626,7 +632,7 @@ class ProgramControl implements ActionListener, KeyListener, MouseListener
 		mainDataPanel.setMinimumSize(new Dimension(dataPanel.getWidth()/2, dataPanel.getHeight()));
 		mainDataPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
 		
-		encsPanel.setPreferredSize(new Dimension(dataPanel.getWidth()/2, dataPanel.getHeight()-10));
+		encsPanel.setPreferredSize(new Dimension(dataPanel.getWidth()/2, p.encsList.length * 47));
 		encsPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
 		
 		dataField = new DataField("Last Name", new JTextField(p.data[0], 15));
@@ -706,6 +712,7 @@ class ProgramControl implements ActionListener, KeyListener, MouseListener
 		
 		encsScroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
 		encsScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+		encsScroll.getVerticalScrollBar().setUnitIncrement(16);
 		encsScroll.setBorder(new LineBorder(new Color(0,0,0), 3));
 		
 		dataScroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER);
@@ -714,6 +721,15 @@ class ProgramControl implements ActionListener, KeyListener, MouseListener
 		Label encsLabel = new Label("Encounters", Label.CENTER);
 		encsLabel.setFont(new Font(null, Font.BOLD, 14));
 		encsPanel.add(encsLabel);
+		
+		JButton encButton = new JButton("Add Encounter");
+		encButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				addEncounter(encsPanel);
+			}
+		});
+		encsPanel.add(encButton);
+		
 		for (int i=0; i<p.encNum; i++)
 		{
 			dataField = new DataField("Date", new JTextField(p.encsList[i].date, 13));
@@ -725,13 +741,6 @@ class ProgramControl implements ActionListener, KeyListener, MouseListener
 				if(c instanceof JTextField)
 					dataFieldsList.add((JTextField)c);
 		}
-		JButton encButton = new JButton("Add Encounter");
-		encButton.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				addEncounter(encsPanel, encButton);
-			}
-		});
-		encsPanel.add(encButton);
 		
 		dataPanel.add(dataScroll);
 		dataPanel.add(encsScroll);
@@ -740,10 +749,9 @@ class ProgramControl implements ActionListener, KeyListener, MouseListener
 		dataPanel.revalidate();
 	}
 	
-	private void addEncounter(JPanel panel, JButton b)
+	private void addEncounter(JPanel panel)
 	{
 		System.out.println("Adding Encounter slot...");
-		panel.remove(b);
 		JPanel newEnc = new JPanel();
 		
 		newEnc.add(new Label("Date"));
@@ -755,8 +763,8 @@ class ProgramControl implements ActionListener, KeyListener, MouseListener
 		for(Component c : newEnc.getComponents())
 			if(c instanceof JTextField)
 				dataFieldsList.add((JTextField)c);
-		panel.add(b);
-		panel.setPreferredSize(new Dimension(panel.getWidth(), panel.getHeight()+30));
+
+		panel.setPreferredSize(new Dimension(panel.getWidth(), panel.getHeight()+47));
 		
 		panel.repaint();
 		panel.revalidate();
@@ -860,6 +868,7 @@ class ProgramControl implements ActionListener, KeyListener, MouseListener
 		
 		encsScroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
 		encsScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+		encsScroll.getVerticalScrollBar().setUnitIncrement(16);
 		encsScroll.setBorder(new LineBorder(new Color(0,0,0), 3));
 		
 		dataScroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER);
@@ -869,22 +878,23 @@ class ProgramControl implements ActionListener, KeyListener, MouseListener
 		encsLabel.setFont(new Font(null, Font.BOLD, 14));
 		encsPanel.add(encsLabel);
 		
+		JButton encButton = new JButton("Add Encounter");
+		encButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				addEncounter(encsPanel);
+			}
+		});
+		encsPanel.add(encButton);
+		
 		dataField = new DataField("Date", new JTextField(13));
 		dataField.add(new Label("Description"));
 		dataField.add(new JTextField(18));
 		dataField.setBorder(new LineBorder(new Color(180,180,180), 4));
 		encsPanel.add(dataField);
+		
 		for(Component c : dataField.getComponents())
 			if(c instanceof JTextField)
 				dataFieldsList.add((JTextField)c);
-			
-		JButton encButton = new JButton("Add Encounter");
-		encButton.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				addEncounter(encsPanel, encButton);
-			}
-		});
-		encsPanel.add(encButton);
 		
 		dataPanel.add(dataScroll);
 		dataPanel.add(encsScroll);
