@@ -1,3 +1,3 @@
 Projects
 --------
-These are my side projects which I started after a few of my classes to apply the concepts I learned as well as one project that was given to me by my parents for their work. 
+These are my side projects which I took up in order to practice various skills and languages. Several where done during college classes to practice the concepts I learned in those classes. 
