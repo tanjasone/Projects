@@ -1,9 +1,8 @@
 const fs = require("fs");
 const path = require("path");
-var { logLevel } = require("../environment");
+var { logLevel } = require("../src/environment");
 var Logger = require("./logger");
 const NodeID3 = require("node-id3");
-const getMP3Duration = require("get-mp3-duration");
 const getMp3Duration = require("get-mp3-duration");
 
 const logger = new Logger(logLevel, "music-player-file-utils");
@@ -20,7 +19,22 @@ var formatDuration = (ms) => {
     var mins = Math.floor(totalSec / 60);
     var sec = Math.floor(totalSec % 60);
 
-    return (mins < 10 ? "0": "") + mins + (sec < 10 ? "0": "") + sec;
+    return (mins < 10 ? "0": "") + mins + ":" + (sec < 10 ? "0": "") + sec;
+}
+
+var savePlaylists = () => {
+    logger.info("Saving playlists data");
+    fs.writeFile(PLAYLISTS_DATA_PATH, JSON.stringify(playlists), (err) => {
+        logger.error(err);
+    });
+}
+
+var deleteSong = (songId) => {
+    delete songs[songId];
+    playlists.forEach(p => {
+        p.songIds = p.songIds.filter(id => id != songId)
+    })
+    savePlaylists();
 }
 
 module.exports = {
@@ -49,7 +63,7 @@ module.exports = {
         }
         if(!fs.existsSync(SONGS_DATA_PATH)) {
             logger.debug("songs file not found, attempting to create...");
-            fs.writeFileSync(SONGS_DATA_PATH, JSON.stringify({}))
+            fs.writeFileSync(SONGS_DATA_PATH, JSON.stringify({latestSongId: 0}))
         }
     },
     // read data from JSON files 
@@ -72,48 +86,101 @@ module.exports = {
             process.exit(-1);
         }
     },
-    saveSongFolderPath: function(path) {
-        logger.debug("Saving song folder path: " + path);
-        settings.songFolderPath = path;
+    getPlaylists: function() {
+        if(playlists !== null) {
+            return playlists;
+        } else {
+            throw Error("PlaylistDataNotLoadedError");
+        }
+    },
+    getSongs: function() {
+        if(songs !== null) {
+            return songs;
+        } else {
+            throw Error("SongsDataNotLoadedError");
+        }
+    },
+    getSettings: function() {
+        if(settings !== null) {
+            return settings;
+        } else {
+            throw Error("SettingsDataNotLoadedError");
+        }
+    },
+    saveSettings: function(obj) {
+        logger.debug("Saving song folder path: ", obj);
+        var songsFolderPathChanged = obj.songsFolderPath !== settings.songsFolderPath;
+        settings = {
+            ...settings,
+            ...obj
+        };
         try {
             fs.writeFileSync(SETTINGS_DATA_PATH, JSON.stringify(settings));
+            // if(songsFolderPathChanged)
+                return {newSongs: this.syncSongData(), playlists};
         } catch(err) {
-            logger.error("Error occurred while writing to settings data");
+            logger.error("Error occurred while writing to settings data", err);
+            throw Error("SaveSettingsError");
         }
+    },
+    createPlaylist: function(p) {
+        logger.info("Creating playlist: " + p.name);
+
+        playlists.push({
+            id: playlists.length,
+            name: p.name,
+            songsIds: []
+        })
+        savePlaylists();
+
+        return playlists;
     },
     syncSongData: function() {
         logger.info("Synchronizing song files");
-        var existingSongs = new Map();
-        Object.entries(songs).forEach(s => {
-            existingSongs.set(s.filePath, {deleteFlag: true});
+        var existingSongsMap = new Map();
+        Object.entries(songs).forEach(([id, obj]) => {
+            if(id !== "latestSongId")
+                existingSongsMap.set(obj.filePath, {deleteFlag: true, id});
         });
-        logger.debug(existingSongs.size, existingSongs);
+        logger.debug(existingSongsMap.size, existingSongsMap);
 
-        var filesNames = fs.readdirSync(settings.songFolderPath).map(f => path.join(settings.songFolderPath, f));
+        var filesNames = fs.readdirSync(settings.songsFolderPath).map(f => path.join(settings.songsFolderPath, f));
         var newSongFiles = filesNames.filter(f => {
-            if(existingSongs.has(f)) {
-                existingSongs.set(f, {deleteFlag: false});
+            var obj = existingSongsMap.get(f);
+            if(obj) {
+                existingSongsMap.set(f, {...obj, deleteFlag: false});
             }
-            return !existingSongs.has(f);
+            return !obj;
         });
         logger.debug("new song file: ", newSongFiles);
 
-        var idx = existingSongs.size;
+        existingSongsMap.forEach((value) => {
+            if(value.deleteFlag) deleteSong(value.id)
+        })
+
+        var id = songs.latestSongId + 1;
         for(var newSong of newSongFiles) {
             var songBuffer = fs.readFileSync(newSong);
             var tags = NodeID3.read(songBuffer);
             var length = formatDuration(getMp3Duration(songBuffer));
-            songs[idx++] = {
-                title: tags.title || path.basename(newSong, path.extname(newSong)),
+            var fileTitle = path.basename(newSong, path.extname(newSong));
+            songs[id] = {
+                songId: id,
+                title: tags.title || fileTitle,
                 artist: tags.artist,
                 album: tags.album,
                 filePath: newSong,
+                relativeFilePath: "\\songs\\" + fileTitle + path.extname(newSong),
                 duration: length,
                 dateAdded: new Date()
-            } 
+            }
+            playlists[0].songIds.push(id);
+            id++; 
         }
+        songs.latestSongId = id-1;
 
-        fs.writeFile(SONGS_DATA_PATH, JSON.stringify(songs), (err) => {
+        savePlaylists();
+        fs.writeFile(SONGS_DATA_PATH, JSON.stringify(songs, null, 4), (err) => {
             if(err) logger.error("Error occurred while saving songs after sync", err);
         });
 

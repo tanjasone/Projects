@@ -2,29 +2,23 @@ import './App.css';
 import "./components/Header"
 import Header from './components/Header';
 import Player from './components/Player';
-import Settings from './components/Settings';
 
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { useEffect } from 'react';
-import { baseUrl } from '../environment';
+import { useState } from 'react';
 
 function App() {
-  useEffect(() => {
-    fetch(baseUrl + "/settings").then(async res => {
-      var data = await res.json();
-      console.log(data);
-      
-    }, rej => {
-      console.error(rej);
-    })
-  })
+  
+  var [isDisplayingSettings, setIsDisplayingSettings] = useState(false);
+
+
+  var playerElem = (<Player isDisplayingSettings={isDisplayingSettings} setIsDisplayingSettings={setIsDisplayingSettings}/>)
   return (
     <div className="App">
       <BrowserRouter>
-        <Header />
+        <Header setIsDisplayingSettings={setIsDisplayingSettings} />
         <Routes>
-          <Route path = "/player" element={<Player />} />
-          <Route path = "/*" element={<Player />} />
+          <Route path = "/player" element={playerElem} />
+          <Route path = "/*" element={playerElem} />
         </Routes>
       </BrowserRouter>
     </div>

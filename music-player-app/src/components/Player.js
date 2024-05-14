@@ -1,49 +1,75 @@
 import { useState, useRef, useEffect } from "react";
 import PlayLists from "./Playlists";
 import SongList from "./SongList";
-import { baseUrl } from "../../environment";
+import { baseUrl } from "../environment";
+import SettingsModal from "./SettingsModal";
 
-export default function Player() {
-    var [isDisplayingSettings, setIsDisplayingSettings] = useState(false);
-    var [songsList, setSongsList] = useState([]);
+export default function Player({isDisplayingSettings, setIsDisplayingSettings}) {
+    var [songsObj, setSongsObj] = useState(null);
     var [currentSong, setCurrentSong] = useState({});
     var [playlistsList, setPlaylistsList] = useState([]);
-    var [activePlaylist, setActivePlaylist] = useState({});
+    var [activePlaylist, setActivePlaylist] = useState({
+        id: 1,
+        name: "All songs",
+        songIds: []
+    });
+    var [settings, setSettings] = useState({});
     var audioRef = useRef(null);
 
     useEffect(() => {
-        fetch(baseUrl + "/playlists").then(async res => {
-            var data = res.json();
-            console.log(data);
+        async function fetchData() {
+            console.log("Fetching data...");
+            var res = await fetch(baseUrl + "/playlists", {
+                mode: "cors"
+            });
+            var data = await res.json();
+            console.log("playlists", data);
             setPlaylistsList(data);
             setActivePlaylist(data[0]);
 
-            fetch(baseUrl + "/songs").then(async res => {
-                var data = await res.json();
-                console.log(data);
-                var allSongsList = activePlaylist.songIds.map(id => data[id]);
-                setSongsList(allSongsList);
-            }).catch(err => {
-                console.error("Error while fetching songs", err);
-                alert("An error has occurred while fetching songs");
-            })
-        }).catch(err => {
-            console.err("Error while fetching playlists: ", err);
-            alert("An error has occurred while fetching playlists: ");
-        })
-    })
+            res = await fetch(baseUrl + "/songs", {
+                mode: "cors"
+            });
+            data = await res.json();
+            console.log("songs", data);
+            setSongsObj(data);
+
+            res = await fetch(baseUrl + "/settings", {
+                mode: "cors"
+            });
+            data = await res.json();
+            console.log("settings", data);
+            setSettings(data);
+        }
+        fetchData();
+    }, [])
+
+    useEffect(() => {
+        if(currentSong != null) {
+            console.log("loading song: " + currentSong.filePath)
+            audioRef.current.load();
+        }
+    }, [currentSong, audioRef])
+
     return (
-        <div>
-            
-            <div>
+        <div style={{display: "flex", flexDirection: "column"}}>
+            <SettingsModal isDisplayingSettings={isDisplayingSettings} setIsDisplayingSettings={setIsDisplayingSettings}
+                settings={settings} setSettings={setSettings} setSongsObj={setSongsObj} setPlaylistsList={setPlaylistsList} />
+            <div className="player-container">
                 <PlayLists activePlaylist={activePlaylist} setActivePlaylist={setActivePlaylist} 
                     playlistsList={playlistsList} />
                 <SongList currentSong={currentSong} setCurrentSong={setCurrentSong} 
-                    songsList={songsList} activePlaylist={activePlaylist} />
+                    songsList={activePlaylist && songsObj ?
+                        activePlaylist.songIds.map(id => songsObj[id]) : null
+                        } activePlaylist={activePlaylist} />
             </div>
             
             <div className="audio-container">
-                <audio ref={audioRef} src={currentSong.path}></audio>
+                <audio controls ref={audioRef}>
+                    {currentSong.filePath ? 
+                        (<source src={currentSong.relativeFilePath} type="audio/mp3" />)
+                        : null}
+                </audio>
             </div>
         </div>
     )

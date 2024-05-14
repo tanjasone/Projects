@@ -1,12 +1,6 @@
 import { useNavigate } from "react-router-dom";
 
-export default function Header() {
-
-    const navigate = useNavigate();
-
-    var navToSettings = () => {
-        navigate("/settings");
-    }
+export default function Header({setIsDisplayingSettings}) {
 
     return (
         <header className="App-header">
@@ -15,7 +9,7 @@ export default function Header() {
             </div>
 
             <div>
-                <img src="gear-29.png" onClick={navToSettings} style={{width:"30px", height: "30px"}}></img>
+                <img src="gear-29.png" onClick={()=>setIsDisplayingSettings(true)} style={{width:"30px", height: "30px"}}></img>
             </div>
             
         </header>
