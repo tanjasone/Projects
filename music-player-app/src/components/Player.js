@@ -57,8 +57,8 @@ export default function Player({isDisplayingSettings, setIsDisplayingSettings}) 
                 settings={settings} setSettings={setSettings} setSongsObj={setSongsObj} setPlaylistsList={setPlaylistsList} />
             <div className="player-container">
                 <PlayLists activePlaylist={activePlaylist} setActivePlaylist={setActivePlaylist} 
-                    playlistsList={playlistsList} />
-                <SongList currentSong={currentSong} setCurrentSong={setCurrentSong} 
+                    playlistsList={playlistsList} setPlaylistsList={setPlaylistsList} />
+                <SongList playlistsList={playlistsList} currentSong={currentSong} setCurrentSong={setCurrentSong} 
                     songsList={activePlaylist && songsObj ?
                         activePlaylist.songIds.map(id => songsObj[id]) : null
                         } activePlaylist={activePlaylist} />

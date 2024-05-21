@@ -12,11 +12,16 @@ fileUtils.loadData();
 
 logger.info("Starting server...");
 var server = http.createServer((req, res) => {
-    if(req.method === "HEAD") return;
+    logger.info(req.method, req.url);
 
+    if(req.method === "HEAD") return;
     res.setHeader("Access-Control-Allow-Origin", "*")
 
-    logger.info(req.method, req.url);
+    if(req.method === "OPTIONS") {
+        res.setHeader("Access-Control-Allow-Methods", "POST, GET, PUT, OPTIONS");
+        res.end();
+    }
+
     if(req.url === "/") {
         logger.info("Health check - OK");
         res.writeHead(200);
@@ -34,10 +39,41 @@ var server = http.createServer((req, res) => {
             }
         }
 
+        if(req.method === "PUT") {
+            req.on("data", (chunk) => {
+                var data = JSON.parse(chunk.toString());
+                logger.debug("data ", data);
+                var result = null;
+                try {
+                    result = fileUtils.createPlaylist(data);
+                    res.writeHead(200);
+
+                } catch(err) {
+                    
+                }
+                res.end(JSON.stringify(result));
+            })
+        }
+
         if(req.method === "POST") {
             req.on("data", (chunk) => {
                 var data = JSON.parse(chunk.toString());
                 logger.debug("data ", data);
+                var result = null;
+                try {
+                    switch(data.action) {
+                        case "ADD_SONGS":
+                            result = fileUtils.addSongsToPlaylist(data.playlistId, data.songIds);
+                            break;
+                        default: 
+                            logger.error("Unknown action type");
+                            res.writeHead(400);
+                    }
+                } catch(err) {
+                    logger.error("Error occurred while modifying playlist");
+                    res.writeHead(500);
+                }
+                res.end(JSON.stringify(result));
             })
         }
     }

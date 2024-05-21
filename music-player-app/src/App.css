@@ -21,6 +21,7 @@
   border-radius: 5px;
   padding: 5px;
   margin: 5px;
+  background-color: #ffffff;
 }
 
 .player-container {
@@ -50,11 +51,13 @@ audio {
   padding: 5px;
   width: 30%;
   min-width: 200px;
+  height: fit-content;
+  max-height: 70vh;
 }
 
 .playlist-item {
   padding: 5px;
-  border-radius: 5px
+  border-radius: 10px
 }
 
 .playlist-item:hover {
@@ -62,16 +65,20 @@ audio {
 }
 
 .active-playlist {
-  background-color: #c9c9c9;
+  background-color: #dcdcdc;
   border: 1px solid black
 }
 
 .song-list-container {
-  border: 2px solid black;
+  border-left: 2px solid black;
+  border-right: 2px solid black;
+  border-radius: 5px;
   padding: 5px;
   margin: 5px;
   width: 100%;
   min-width: 40em;
+  height: fit-content;
+  max-height: 70vh;
 }
 
 .song-list-item {
@@ -79,6 +86,7 @@ audio {
   border-radius: 5px;
   cursor:default;
 }
+
 
 .song-list-item:hover {
   background-color: #cdcdcd;
@@ -90,9 +98,14 @@ audio {
 
 .current-song-item {
   background-color: rgb(223, 223, 223);
+  font-weight: bold;
 }
 
-.settings-modal-background {
+.selected-song {
+  background-color: #cfdee2;
+}
+
+.modal-background {
   z-index: 1;
   background-color: rgba(0, 0, 0, 0.5);
   width: 100vw;
@@ -105,7 +118,7 @@ audio {
   align-items: center;
 }
 
-.settings-modal {
+.modal {
   border-radius: 10px;
   padding: 10px;
   background-color: white;
@@ -117,6 +130,7 @@ audio {
 #song-list-table {
   width: 100%;
   margin: 0;
+  border-collapse: collapse;
 }
 
 thead {
@@ -125,4 +139,19 @@ thead {
 
 td, th {
   padding: 10px
+}
+
+.options-dropdown {
+  position: absolute;
+  background-color: white;
+  border: 1px solid black;
+
+}
+
+.options-list-item {
+  padding: 5px 10px;
+}
+
+.options-list-item:hover {
+  background-color: rgb(224, 224, 224);
 }

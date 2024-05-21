@@ -24,9 +24,7 @@ var formatDuration = (ms) => {
 
 var savePlaylists = () => {
     logger.info("Saving playlists data");
-    fs.writeFile(PLAYLISTS_DATA_PATH, JSON.stringify(playlists), (err) => {
-        logger.error(err);
-    });
+    fs.writeFileSync(PLAYLISTS_DATA_PATH, JSON.stringify(playlists));
 }
 
 var deleteSong = (songId) => {
@@ -124,12 +122,27 @@ module.exports = {
         }
     },
     createPlaylist: function(p) {
-        logger.info("Creating playlist: " + p.name);
+        logger.info("Creating playlist: " + p.Name);
 
         playlists.push({
-            id: playlists.length,
-            name: p.name,
-            songsIds: []
+            id: playlists.length + 1,
+            name: p.Name,
+            songIds: []
+        })
+        savePlaylists();
+
+        return playlists;
+    },
+    addSongsToPlaylist: function(playlistId, songIds) {
+        logger.info("Adding songs to playlist: ", playlistId);
+        playlists = playlists.map(p => {
+            if(p.id === playlistId) {
+                songIds.forEach(s => {
+                    if(!p.songIds.includes(s))
+                        p.songIds.push(s);
+                });
+            }
+            return p;
         })
         savePlaylists();
 

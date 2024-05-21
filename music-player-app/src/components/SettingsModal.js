@@ -14,6 +14,7 @@ export default function SettingsModal({isDisplayingSettings, setIsDisplayingSett
         };
         fetch(baseUrl + "/settings", {
             method: "POST",
+            mode: "cors",
             body: JSON.stringify(newSettings)
         }).then(async res => {
             if(res.status === 210) { // performed sync, resetting song list required
@@ -48,8 +49,8 @@ export default function SettingsModal({isDisplayingSettings, setIsDisplayingSett
         display: isDisplayingSettings ? "flex" : "none"
     }
     return (
-        <div className="settings-modal-background" style={modalDisplayStyle}>
-            <div className="settings-modal">
+        <div className="modal-background" style={modalDisplayStyle}>
+            <div className="modal">
                 <button className="btn" style={{float:"right"}} onClick={()=>setIsDisplayingSettings(false)}>X</button>
                 <h3>Settings</h3>
                 <hr />

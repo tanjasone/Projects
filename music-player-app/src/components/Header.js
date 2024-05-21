@@ -5,7 +5,7 @@ export default function Header({setIsDisplayingSettings}) {
     return (
         <header className="App-header">
             <div>
-                <h2>Music Player</h2>
+                <h2>Music Player♫</h2>
             </div>
 
             <div>
